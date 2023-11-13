@@ -2,100 +2,21 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
 
-class ProgramNRRP:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("CRAZY NRRP")
-        self.root.geometry("768x1366")
-       
-        #PRODUCTIONS SECTION
-        self.label = tk.Label(root, text="PRODUCTIONS:", font=("Helvetica", 12, "bold"))
-        self.label.place(x=8, y=2)
-
-        self.label = tk.Label(root, text="<placeholder for prod.file>", font=("Helvetica", 8))
-        self.label.place(x=8, y=20)
-
-        # Create variable used display frame
-        self.prodFrame = tk.Frame(root, bg="white", relief=tk.SUNKEN, bd=2)
-        self.prodFrame.place(x=8, y=40, width=368, height=368)
-
-        # Create scrollbar for the tab_var_used_frame
-        self.var_used_scrollbar = tk.Scrollbar(self.prodFrame, orient=tk.VERTICAL)
-        self.var_used_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-
-        # Create a listbox to display the content (you can replace this with your own content)
-        self.var_used_listbox = tk.Listbox(self.prodFrame, yscrollcommand=self.var_used_scrollbar.set)
-        self.var_used_listbox.pack(fill=tk.BOTH, expand=True)
-
-        # Configure the scrollbar to work with the listbox
-        self.var_used_scrollbar.config(command=self.var_used_listbox.yview)
-#-----------------------------------------------------PARSE TABLE------------------------------#
-        self.label = tk.Label(root, text="PARSE TABLE:", font=("Helvetica", 12, "bold"))
-        self.label.place(x=400, y=2)
-
-        self.label = tk.Label(root, text="<placeholder for ptble file>", font=("Helvetica", 8))
-        self.label.place(x=400, y=20)
-
-        # Create variable used display frame
-        self.parseFrame = tk.Frame(root, bg="white", relief=tk.SUNKEN, bd=2)
-        self.parseFrame.place(x=400, y=40, width=600, height=298)
-
-        # Create vertical scrollbar for the tab_var_used_frame
-        self.var_used_scrollbar_y = tk.Scrollbar(self.parseFrame, orient=tk.VERTICAL)
-        self.var_used_scrollbar_y.pack(side=tk.RIGHT, fill=tk.Y)
-
-        # Create horizontal scrollbar for the tab_var_used_frame
-        self.var_used_scrollbar_x = tk.Scrollbar(self.parseFrame, orient=tk.HORIZONTAL)
-        self.var_used_scrollbar_x.pack(side=tk.BOTTOM, fill=tk.X)
-
-        # Create a listbox to display the content with both vertical and horizontal scrollbars
-        self.var_used_listbox = tk.Listbox(self.parseFrame, yscrollcommand=self.var_used_scrollbar_y.set, xscrollcommand=self.var_used_scrollbar_x.set)
-        self.var_used_listbox.pack(fill=tk.BOTH, expand=True)
-
-        # Configure the scrollbars to work with the listbox
-        self.var_used_scrollbar_y.config(command=self.var_used_listbox.yview)
-        self.var_used_scrollbar_x.config(command=self.var_used_listbox.xview)
-
-        self.label_2_loaded = tk.Label(root, text="LOADED:", font=("Helvetica", 12, "bold"))
-        self.label_2_loaded.place(x=400, y=350)
-
-        self.label_2_status = tk.Label(root, text="<placeholderforprod.file>", font=("Helvetica", 8))
-        self.label_2_status.place(x=474, y=352)
-
-        self.insert_button = tk.Button(root, text="Load", command=self.load_button_command, width=8)
-        self.insert_button.place(x=474 + self.label_2_status.winfo_reqwidth() + 8, y=350)
-
-
-#-----------------------------------------------------INPUT SECTION------------------------------#
-        # Create label for status
-        self.label_2 = tk.Label(root, text="INPUT", font=("Helvetica", 12, "bold"))
-        self.label_2.place(x=90, y=430)
-
-        self.bi_console_frame = tk.Text(bg="white", relief=tk.SUNKEN, bd=2, wrap=tk.WORD, height=1, width=40)
-        self.bi_console_frame.place(x=150, y=432)
-
-        self.insert_button = tk.Button(root, text="Parse", command="", width="8")
-        self.insert_button.place(x=480, y=430)
-
-#-----------------------------------------------------PROCESS TABLE------------------------------#
-
-        # Create label for status
-        self.label_2 = tk.Label(root, text="PARSING: ", font=("Helvetica", 12, "bold"))
-        self.label_2.place(x=8, y=480)
-
-        self.bi_console_frame = tk.Text(bg="white", relief=tk.SUNKEN, bd=2, wrap=tk.WORD, height=1, width=40)
-        self.bi_console_frame.place(x=150, y=432)
-
-        self.label_2 = tk.Label(root, text="<placeholder for status>", font=("Helvetica", 8))
-        self.label_2.place(x=100, y=484)
-
-        self.par_var_used_frame = tk.Frame(root, bg="white", relief=tk.SUNKEN, bd=2)
-        self.par_var_used_frame.place(x=8, y=500, width=1200, height=298)
-
+class ProgramNRRP(tk.Tk):
+    
+    def __init__(self, title, size):
+        super().__init__()
+        self.title(title)
+        self.geometry(size)
+        self.state('zoomed')
+        self.left_side = left_section(self)
+        self.right_side = right_section(self)
+        self.mainloop()
+        
     def load_button_command(self):
         file_path = filedialog.askopenfilename(filetypes=[("Production Files", "*.prod;*.ptbl")])
         if file_path:
-            self.label_2_status.config(text=file_path)
+            self.left_side.status_label.config(text=file_path)
             if file_path.endswith(".prod"):
                 self.prod_load_file(file_path)  # Assuming 'app' is the createTable instance
             elif file_path.endswith(".ptbl"):
@@ -105,11 +26,11 @@ class ProgramNRRP:
 
     def prod_load_file(self, file_path):
         # Clear existing data in the Listbox
-        self.var_used_listbox.delete(0, tk.END)
+        self.left_side.var_used_listbox.delete(0, tk.END)
 
         # Create a frame within tab_var_used_frame
-        tree_frame = tk.Frame(self.prodFrame)
-        tree_frame.pack(expand=tk.YES, fill=tk.BOTH)
+        tree_frame = tk.Frame(self.left_side.frame_2)
+        tree_frame.pack( fill=tk.BOTH)
 
         # Create Treeview
         self.tree = ttk.Treeview(tree_frame, show="headings")
@@ -183,8 +104,118 @@ class ProgramNRRP:
             for line in lines[1:]:
                 data = line.strip().split(',')
                 self.tree.insert("", "end", values=data)
+                
+class left_section(tk.Frame):
+    
+    def __init__(self, parent):
+        # INITIALIZE LEFT SECTION FRAME
+        
+        super().__init__()
+        
+        self.parent = parent
+        self.pack(side = "left", fill = "y", padx= 30, pady= [0, 30])
+        
+        # Load Button & load-status label
+        self.frame_1 = ttk.Frame(self)
+        self.frame_1.pack(side = "top", anchor='nw' ,pady = 15)
+        
+        # self.load_button = tk.Button(self.frame_1, text="Load", command=self.load_button_command, width=10)
+        self.load_button = ttk.Button(self.frame_1, text="Load", command=parent.load_button_command, width=10)
+        self.load_button.pack(side = "left")
+        
+        self.status_label = ttk.Label(self.frame_1, text="<placeholder for loaded file>", font=("Helvetica", 8))
+        self.status_label.pack(side = "left")
+        
+        #-----------------------------------------------------PRODUCTION TABLE------------------------------#
+        self.frame_2 = ttk.Frame(self)
+        self.frame_2.pack(side = "top", anchor='w')
+        
+        self.produc_label = ttk.Label(self.frame_2, text="PRODUCTIONS:", font=("Helvetica", 12, "bold"))
+        self.produc_label.pack(side = "top")
+        
+        self.produc_placeholder = ttk.Label(self.frame_2, text="<placeholder for prod.file>", font=("Helvetica", 8))
+        self.produc_placeholder.pack(side = "top", pady=[0, 10])
 
-if __name__ == "__main__":
-    root = tk.Tk()
-    app = ProgramNRRP(root)
-    root.mainloop()
+        # Create variable used display frame
+        self.prodFrame = tk.Frame(self, bg="white", relief='sunken', bd=2)
+        self.prodFrame.pack(side = 'top', anchor='w', fill='y', pady=[0, 20])
+        
+        # Create scrollbar for the tab_var_used_frame
+        self.var_used_scrollbar = ttk.Scrollbar(self.prodFrame, orient='vertical')
+        self.var_used_scrollbar.pack(side='right', fill='y')
+
+        # Create a listbox to display the content (you can replace this with your own content)
+        self.var_used_listbox = tk.Listbox(self.prodFrame, yscrollcommand=self.var_used_scrollbar.set, width=40)
+        self.var_used_listbox.pack(fill='y', expand=True)
+
+        # Configure the scrollbar to work with the listbox
+        self.var_used_scrollbar.config(command=self.var_used_listbox.yview)
+        
+        #-----------------------------------------------------PARSE TABLE------------------------------#
+        self.frame_3 = ttk.Frame(self)
+        self.frame_3.pack(side = 'top', anchor='w')
+        
+        self.ptable_label = ttk.Label(self.frame_3, text="PARSE TABLE:", font=("Helvetica", 12, "bold"))
+        self.ptable_label.pack(side = 'top')
+
+        self.ptable_placeholder = ttk.Label(self.frame_3, text="<placeholder for ptble file>", font=("Helvetica", 8))
+        self.ptable_placeholder.pack(side = 'top', pady=[0, 10])
+
+        # Create variable used display frame
+        self.parseFrame = tk.Frame(self, bg="white", relief='sunken', bd=2)
+        self.parseFrame.pack(side = 'top', fill = "x", pady=[0, 20])
+
+        # Create vertical scrollbar for the tab_var_used_frame
+        self.var_used_scrollbar_y = ttk.Scrollbar(self.parseFrame, orient='vertical')
+        self.var_used_scrollbar_y.pack(side='right', fill='y')
+
+        # Create horizontal scrollbar for the tab_var_used_frame
+        self.var_used_scrollbar_x = ttk.Scrollbar(self.parseFrame, orient='horizontal')
+        self.var_used_scrollbar_x.pack(side='bottom', fill='x')
+
+        # Create a listbox to display the content with both vertical and horizontal scrollbars
+        self.var_used_listbox = tk.Listbox(self.parseFrame, yscrollcommand=self.var_used_scrollbar_y.set, xscrollcommand=self.var_used_scrollbar_x.set, width=100)
+        self.var_used_listbox.pack(fill='both', expand=True)
+
+        # Configure the scrollbars to work with the listbox
+        self.var_used_scrollbar_y.config(command=self.var_used_listbox.yview)
+        self.var_used_scrollbar_x.config(command=self.var_used_listbox.xview)
+
+        #-----------------------------------------------------INPUT SECTION------------------------------#
+
+        self.input_label = ttk.Label(self, text="INPUT", font=("Helvetica", 12, "bold"))
+        self.input_label.pack(side = 'top', anchor='w')
+
+        self.frame_4 = ttk.Frame(self)
+        self.frame_4.pack(side = 'top', anchor='w')
+        
+        self.input_field = tk.Text(master = self.frame_4, bg="white", relief='sunken', bd=2, wrap='word', height=1, width=40)
+        self.input_field.pack(side = 'left', padx=[0, 20])
+
+        self.parse_button = ttk.Button(master = self.frame_4, text="Parse", command="", width="8")
+        self.parse_button.pack(side = 'left')
+        
+class right_section(tk.Frame):
+     def __init__(self, parent):
+        # INITIALIZE LEFT SECTION FRAME
+        
+        super().__init__()
+        self.parent = parent
+        self.pack(side = "left", fill = "both", expand = True, padx= 30, pady= [15, 30])
+        
+        # Label for Parsing section
+        
+        self.frame_1 = tk.Frame(self)
+        self.frame_1.pack(side = "top", anchor='w')
+        
+        self.parsing_label = ttk.Label(self.frame_1, text="PRODUCTIONS:", font=("Helvetica", 12, "bold"))
+        self.parsing_label.pack(side = "top")
+        
+        self.parsing_placeholder = ttk.Label(self.frame_1, text="<placeholder for prod.file>", font=("Helvetica", 8))
+        self.parsing_placeholder.pack(side = "top", pady=[0, 10])
+        
+        self.parsing_frame = tk.Frame(self, bg="white", relief=tk.SUNKEN, bd=2)
+        self.parsing_frame.pack(side='top', fill='both', expand=True)
+        
+ProgramNRRP(title="NRRP App", size="1280x720")
+
