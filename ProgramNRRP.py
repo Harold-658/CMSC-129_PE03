@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import Menu, scrolledtext
+from tkinter import ttk
 from tkinter import filedialog
 
 class ProgramNRRP:
@@ -16,15 +16,15 @@ class ProgramNRRP:
         self.label.place(x=8, y=20)
 
         # Create variable used display frame
-        self.tab_var_used_frame = tk.Frame(root, bg="white", relief=tk.SUNKEN, bd=2)
-        self.tab_var_used_frame.place(x=8, y=40, width=368, height=368)
+        self.prodFrame = tk.Frame(root, bg="white", relief=tk.SUNKEN, bd=2)
+        self.prodFrame.place(x=8, y=40, width=368, height=368)
 
         # Create scrollbar for the tab_var_used_frame
-        self.var_used_scrollbar = tk.Scrollbar(self.tab_var_used_frame, orient=tk.VERTICAL)
+        self.var_used_scrollbar = tk.Scrollbar(self.prodFrame, orient=tk.VERTICAL)
         self.var_used_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
         # Create a listbox to display the content (you can replace this with your own content)
-        self.var_used_listbox = tk.Listbox(self.tab_var_used_frame, yscrollcommand=self.var_used_scrollbar.set)
+        self.var_used_listbox = tk.Listbox(self.prodFrame, yscrollcommand=self.var_used_scrollbar.set)
         self.var_used_listbox.pack(fill=tk.BOTH, expand=True)
 
         # Configure the scrollbar to work with the listbox
@@ -37,19 +37,19 @@ class ProgramNRRP:
         self.label.place(x=400, y=20)
 
         # Create variable used display frame
-        self.tab_var_used_frame = tk.Frame(root, bg="white", relief=tk.SUNKEN, bd=2)
-        self.tab_var_used_frame.place(x=400, y=40, width=600, height=298)
+        self.parseFrame = tk.Frame(root, bg="white", relief=tk.SUNKEN, bd=2)
+        self.parseFrame.place(x=400, y=40, width=600, height=298)
 
         # Create vertical scrollbar for the tab_var_used_frame
-        self.var_used_scrollbar_y = tk.Scrollbar(self.tab_var_used_frame, orient=tk.VERTICAL)
+        self.var_used_scrollbar_y = tk.Scrollbar(self.parseFrame, orient=tk.VERTICAL)
         self.var_used_scrollbar_y.pack(side=tk.RIGHT, fill=tk.Y)
 
         # Create horizontal scrollbar for the tab_var_used_frame
-        self.var_used_scrollbar_x = tk.Scrollbar(self.tab_var_used_frame, orient=tk.HORIZONTAL)
+        self.var_used_scrollbar_x = tk.Scrollbar(self.parseFrame, orient=tk.HORIZONTAL)
         self.var_used_scrollbar_x.pack(side=tk.BOTTOM, fill=tk.X)
 
         # Create a listbox to display the content with both vertical and horizontal scrollbars
-        self.var_used_listbox = tk.Listbox(self.tab_var_used_frame, yscrollcommand=self.var_used_scrollbar_y.set, xscrollcommand=self.var_used_scrollbar_x.set)
+        self.var_used_listbox = tk.Listbox(self.parseFrame, yscrollcommand=self.var_used_scrollbar_y.set, xscrollcommand=self.var_used_scrollbar_x.set)
         self.var_used_listbox.pack(fill=tk.BOTH, expand=True)
 
         # Configure the scrollbars to work with the listbox
@@ -89,25 +89,100 @@ class ProgramNRRP:
         self.label_2 = tk.Label(root, text="<placeholder for status>", font=("Helvetica", 8))
         self.label_2.place(x=100, y=484)
 
-        self.tab_var_used_frame = tk.Frame(root, bg="white", relief=tk.SUNKEN, bd=2)
-        self.tab_var_used_frame.place(x=8, y=500, width=1200, height=298)
+        self.par_var_used_frame = tk.Frame(root, bg="white", relief=tk.SUNKEN, bd=2)
+        self.par_var_used_frame.place(x=8, y=500, width=1200, height=298)
 
     def load_button_command(self):
         file_path = filedialog.askopenfilename(filetypes=[("Production Files", "*.prod;*.ptbl")])
         if file_path:
             self.label_2_status.config(text=file_path)
             if file_path.endswith(".prod"):
-                app.prod_load_file(file_path)  # Assuming 'app' is the createTable instance
+                self.prod_load_file(file_path)  # Assuming 'app' is the createTable instance
             elif file_path.endswith(".ptbl"):
-                app.ptbl_load_file(file_path)  # Assuming 'app' is the createTable instance
+                self.ptblCreateLoadTable(file_path)
             else:
                 print("Invalid file type.")
 
-    def save_file(self):
-        pass  # Implement save functionality
+    def prod_load_file(self, file_path):
+        # Clear existing data in the Listbox
+        self.var_used_listbox.delete(0, tk.END)
 
-    def save_file_as(self):
-        pass  # Implement save as functionality
+        # Create a frame within tab_var_used_frame
+        tree_frame = tk.Frame(self.prodFrame)
+        tree_frame.pack(expand=tk.YES, fill=tk.BOTH)
+
+        # Create Treeview
+        self.tree = ttk.Treeview(tree_frame, show="headings")
+
+        # Add vertical scrollbar
+        vsb = ttk.Scrollbar(tree_frame, orient="vertical", command=self.tree.yview)
+        vsb.pack(side="right", fill="y")
+        self.tree.configure(yscrollcommand=vsb.set)
+
+        # Pack Treeview
+        self.tree.pack(expand=tk.YES, fill=tk.BOTH)
+
+        if file_path:
+            # Clear existing data in the Treeview
+            for item in self.tree.get_children():
+                self.tree.delete(item)
+
+            # Read the content of the selected file
+            with open(file_path, "r") as file:
+                lines = file.readlines()
+
+            # Assuming each line in the file represents a row in the table
+            for line in lines:
+                data = line.strip().split(',')
+                self.tree.insert("", "end", values=data)
+
+            # Assuming the first row contains column headings
+            headings = lines[0].strip().split(',')
+            self.tree["columns"] = headings
+            for col in headings:
+                self.tree.heading(col, text=col, anchor="center")
+                self.tree.column(col, width=100, anchor="center")  # Adjust the width as needed
+
+
+    def ptblCreateLoadTable(self, file_path):
+        # Clear existing data in the Listbox
+        self.var_used_listbox.delete(0, tk.END)
+
+        # Create a frame within tab_var_used_frame
+        tree_frame = tk.Frame(self.parseFrame)
+        tree_frame.pack(expand=tk.YES, fill=tk.BOTH)
+
+        # Create Treeview
+        self.tree = ttk.Treeview(tree_frame, show="headings")
+
+        # Add vertical scrollbar
+        vsb = ttk.Scrollbar(tree_frame, orient="vertical", command=self.tree.yview)
+        vsb.pack(side="right", fill="y")
+        self.tree.configure(yscrollcommand=vsb.set)
+
+        # Pack Treeview
+        self.tree.pack(expand=tk.YES, fill=tk.BOTH)
+
+        if file_path:
+            # Clear existing data in the Treeview
+            for item in self.tree.get_children():
+                self.tree.delete(item)
+
+            # Read the content of the selected file
+            with open(file_path, "r") as file:
+                lines = file.readlines()
+
+            # Extract column headings
+            headings = lines[0].strip().split(',')
+            self.tree["columns"] = headings
+            for col in headings:
+                self.tree.heading(col, text=col, anchor="center")
+                self.tree.column(col, width=100, anchor="center")  # Adjust the width as needed
+
+            # Populate the Treeview with data from the file
+            for line in lines[1:]:
+                data = line.strip().split(',')
+                self.tree.insert("", "end", values=data)
 
 if __name__ == "__main__":
     root = tk.Tk()
