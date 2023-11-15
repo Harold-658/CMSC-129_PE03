@@ -11,8 +11,7 @@ Program Description:
 """
 
 import tkinter as tk
-from tkinter import ttk
-from tkinter import filedialog
+from tkinter import ttk, filedialog, simpledialog
 import re
 import os 
 import csv
@@ -201,12 +200,11 @@ class ProgramNRRP(tk.Tk):
         output_filename = self.file_path.split('/')[-1].split('.')[0] + '.prsd'
         output_path = os.path.join(os.path.dirname(self.file_path), output_filename)  
         
-        counter = 1
-        while os.path.exists(output_path):
-            new_output_filename = f"{output_filename.split('.')[0]} ({counter}).prsd"
-            output_path = os.path.join(os.path.dirname(self.file_path), new_output_filename)
-            counter += 1
-
+        output_filename = simpledialog.askstring("Set File Name", "Enter File Name for '.prsd' file")
+        output_filename = f"{output_filename}_{self.loaded_prod_file.replace('.prod', '.prsd')}" 
+        
+        output_path = os.path.join(os.path.dirname(self.file_path), output_filename)
+        
         with open(output_path, 'w', newline='') as output_file:
             writer = csv.writer(output_file)
             # Write the parsing table contents
@@ -214,7 +212,7 @@ class ProgramNRRP(tk.Tk):
                 values = self.right_side.parsing_treeview.item(row)['values']
                 writer.writerow(values)
 
-        self.right_side.parsing_placeholder.config(text=f"Valid. Please see {output_path.split('/')[-1]}")
+        self.right_side.parsing_placeholder.config(text=f"Valid. Please see {output_filename}")
         
     def check_loaded(self):
         self.right_side.remove_parsing_table()
