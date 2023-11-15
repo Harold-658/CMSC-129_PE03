@@ -27,7 +27,8 @@ class ProgramNRRP(tk.Tk):
         self.resizable(False,False)
         
         self.prod_content = []
-        self.ptbl_content = []
+        self.ptbl_data = []
+        self.ptbl_markers = []
         self.ptbl_terminals = []
         self.ptbl_NT = []
         
@@ -95,20 +96,21 @@ class ProgramNRRP(tk.Tk):
             """
             with open(file_path, "r") as file:
                 ptbl_content = file.read()
+                self.extract_ptbl(ptbl_content)
                 
-            ptbl_content = ptbl_content.splitlines()
+            # ptbl_content = ptbl_content.splitlines()
             
-            self.ptbl_terminals = re.split(",", ptbl_content[0])[1:]    
+            # self.ptbl_terminals = re.split(",", ptbl_content[0])[1:] 
         
-            for line in ptbl_content[1:]:
-                data = re.split(",", line)
-                self.ptbl_NT.append(data[0])
-                self.ptbl_content.append(data[1:])
+            # for line in ptbl_content[1:]:
+            #     data = re.split(",", line)
+            #     self.ptbl_NT.append(data[0])
+            #     self.ptbl_content.append(data[1:])
             
             """ END """
-            
+            print(self.ptbl_data)
             # Extract column headings
-            headings = ptbl_content[0].strip().split(',')
+            headings = self.ptbl_data[0].strip().split(',')
             self.left_side.var_used_parse_treeview["columns"] = headings
             
             for col in headings:
@@ -116,12 +118,36 @@ class ProgramNRRP(tk.Tk):
                 self.left_side.var_used_parse_treeview.column(col, width=100, anchor="center")  # Adjust the width as needed
 
             # Populate the Treeview with data from the file
-            for line in ptbl_content[1:]:
+            for line in self.ptbl_data[1:]:
                 data = line.strip().split(',')
                 self.left_side.var_used_parse_treeview.insert("", "end", values=data)
             
         self.left_side.var_used_parse_treeview.pack(fill='y', expand=True)
         self.check_loaded()
+        
+    def extract_ptbl(self, data):
+        non_term = []
+        content = []
+        data = data.splitlines()
+        
+        terminals = re.split(",", data[0])
+        terminal_num = len(terminals)
+        
+        for line in data[1:]:
+            row = re.split(",", line)
+            
+            if terminal_num != len(row):
+                print("Invalid input file! Previous loaded")
+                return 
+            
+            non_term.append(line[0])
+            content.append(line[1:])
+              
+        self.ptbl_data = data
+        self.ptbl_terminals = terminals 
+        self.ptbl_NT = non_term
+        self.ptbl_markers = content
+
         
     def parse(self, event=None):
         self.right_side.remove_parsing_table()
@@ -166,12 +192,12 @@ class ProgramNRRP(tk.Tk):
             elif stack_top in self.ptbl_terminals:
                 action = 'ERROR! Top stack terminal does not match with current symbol in input buffer.' 
                 break
-            elif row == None or col == None or self.ptbl_content[row][col] == '': # if basta uy
+            elif row == None or col == None or self.ptbl_markers[row][col] == '': # if basta uy
                 action = 'ERROR! No production found.'
                 break
-            elif self.ptbl_content[row][col] != '':
+            elif self.ptbl_markers[row][col] != '':
                 stack.pop()
-                prod_index = int(self.ptbl_content[row][col]) - 1 
+                prod_index = int(self.ptbl_markers[row][col]) - 1 
                 prod = self.prod_content[prod_index][2].split()
                 action = f"Output {stack_top} > {self.prod_content[prod_index][2]}"
                 push(prod, stack)
@@ -221,7 +247,7 @@ class ProgramNRRP(tk.Tk):
         
     def check_loaded(self):
         prod_file_loaded = self.prod_content != []
-        ptbl_file_loaded = self.ptbl_content != []
+        ptbl_file_loaded = self.ptbl_data != []
         
         if prod_file_loaded and ptbl_file_loaded and self.file_path.endswith(".prod"):
             ptbl_file_path = self.file_path.replace(".prod", ".ptbl")
