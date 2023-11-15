@@ -51,7 +51,7 @@ class ProgramNRRP(tk.Tk):
             elif file_path.endswith(".ptbl"):
                 self.loaded_ptbl_file = file_path.split('/')[-1]
                 self.left_side.ptable_placeholder.config(text=file_path.split('/')[-1])
-                self.ptblCreateLoadTable(file_path)
+                self.ptbl_load_file(file_path)
             else:
                 print("Invalid file type.")
                 
@@ -89,7 +89,7 @@ class ProgramNRRP(tk.Tk):
         self.left_side.var_used_production_Treeview.pack(fill='y', expand=True)
         self.check_loaded()
 
-    def ptblCreateLoadTable(self, file_path):
+    def ptbl_load_file(self, file_path):
         if file_path:
             self.left_side.remove_parse_table()
             
@@ -97,17 +97,8 @@ class ProgramNRRP(tk.Tk):
                 To populate the ptbl lists
             """
             with open(file_path, "r") as file:
-                ptbl_content = file.read()
-                self.extract_ptbl(ptbl_content)
-                
-            # ptbl_content = ptbl_content.splitlines()
-            
-            # self.ptbl_terminals = re.split(",", ptbl_content[0])[1:] 
-        
-            # for line in ptbl_content[1:]:
-            #     data = re.split(",", line)
-            #     self.ptbl_NT.append(data[0])
-            #     self.ptbl_content.append(data[1:])
+                data = file.read()
+                self.extract_ptbl(file_path, data)
             
             """ END """
             print(self.ptbl_data)
@@ -127,7 +118,7 @@ class ProgramNRRP(tk.Tk):
         self.left_side.var_used_parse_treeview.pack(fill='y', expand=True)
         self.check_loaded()
         
-    def extract_ptbl(self, data):
+    def extract_ptbl(self, file_path, data):
         non_term = []
         content = []
         data = data.splitlines()
@@ -139,12 +130,13 @@ class ProgramNRRP(tk.Tk):
             row = re.split(",", line)
             
             if terminal_num != len(row):
-                print("Invalid input file! Previous loaded")
+                self.left_side.ptable_placeholder.config(text=f"Incomplete data! {self.loaded_ptbl_file} is loaded.")   
                 return 
             
             non_term.append(line[0])
             content.append(line[1:])
-              
+        
+        self.loaded_ptbl_file = file_path.split('/')[-1]   
         self.ptbl_data = data
         self.ptbl_terminals = terminals 
         self.ptbl_NT = non_term
