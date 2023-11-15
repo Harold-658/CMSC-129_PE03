@@ -211,10 +211,16 @@ class ProgramNRRP(tk.Tk):
             to_display = ['ERROR','ERROR','ERROR']
             
         self.right_side.parsing_treeview.insert("", "end", values=to_display)
-        self.right_side.parsing_treeview.pack(side='top', anchor='w', fill='y')      
-        
+        self.right_side.parsing_treeview.pack(side='top', anchor='w', fill='y')    
+
         output_filename = self.file_path.split('/')[-1].split('.')[0] + '.prsd'
-        output_path = os.path.join(os.path.dirname(self.file_path), output_filename)
+        output_path = os.path.join(os.path.dirname(self.file_path), output_filename)  
+        
+        counter = 1
+        while os.path.exists(output_path):
+            new_output_filename = f"{output_filename.split('.')[0]}({counter}).prsd"
+            output_path = os.path.join(os.path.dirname(self.file_path), new_output_filename)
+            counter += 1
 
         with open(output_path, 'w', newline='') as output_file:
             writer = csv.writer(output_file)
@@ -223,7 +229,7 @@ class ProgramNRRP(tk.Tk):
                 values = self.right_side.parsing_treeview.item(row)['values']
                 writer.writerow(values)
 
-        self.right_side.parsing_placeholder.config(text=f"Valid. Please see {output_filename}")
+        self.right_side.parsing_placeholder.config(text=f"Valid. Please see {output_path.split('/')[-1]}")
         
     def check_loaded(self):
         if(self.prod_content != [] and self.ptbl_content != []):
@@ -244,8 +250,8 @@ class left_section(tk.Frame):
         self.frame_1.pack(side = "top", anchor='nw' ,pady = [0, 15])
         
         # self.load_button = tk.Button(self.frame_1, text="Load", command=self.load_button_command, width=10)
-        self.load_button = tk.Button(self.frame_1, text="Load", command=parent.load_button_command, width=15, padx=5, pady=5, relief='raised')
-        self.load_button.pack(side = "left", padx=[0,20])
+        self.load_button = ttk.Button(self.frame_1, text="Load", command=parent.load_button_command, width=10)
+        self.load_button.pack(side = "left")
         
         self.status_label = ttk.Label(self.frame_1, text="", font=("Helvetica", 12, 'bold'))
         self.status_label.pack(side = "left")
@@ -349,7 +355,7 @@ class right_section(tk.Frame):
         self.parsing_label = ttk.Label(self.frame_1, text="PARSING:", font=("Helvetica", 12, "bold"))
         self.parsing_label.pack(side = "top", anchor='w')
         
-        self.parsing_placeholder = ttk.Label(self.frame_1, text="", font=("Helvetica", 10))
+        self.parsing_placeholder = ttk.Label(self.frame_1, text="", font=("Helvetica", 8))
         self.parsing_placeholder.pack(side = "top", pady=[0, 10])
         
         self.parsing_treeview = ttk.Treeview(self, height=50)
