@@ -1,0 +1,7 @@
+Num $,0 + $
+Sign Digits $,0 + $,Output Num > Sign Digits
+Digits $,0 + $,Output Sign > e
+Digit More $,0 + $,Output Digits > Digit More
+0 More $,0 + $,Output Digit > 0
+More $,+ $,Match 0 
+,,ERROR! No production found.

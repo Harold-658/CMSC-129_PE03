@@ -25,11 +25,12 @@ class ProgramNRRP(tk.Tk):
         self.state('zoomed')
         self.resizable(False,False)
         
-        self.prod_content = []
+        self.prod_data = []
         self.ptbl_data = []
         self.ptbl_markers = []
         self.ptbl_terminals = []
         self.ptbl_NT = []
+        self.ptbl_status = None
         
         self.file_path = ''
         self.loaded_prod_file = ''
@@ -39,56 +40,66 @@ class ProgramNRRP(tk.Tk):
         self.mainloop()
         
     def load_button_command(self):
-        
         file_path = filedialog.askopenfilename(filetypes=[("Production Files", "*.prod;*.ptbl")])
         self.file_path = file_path
         if file_path:
-            self.left_side.status_label.config(text=f"LOADED: {file_path.split('/')[-1]}" )
             if file_path.endswith(".prod"):
-                self.loaded_prod_file = file_path.split('/')[-1]
-                self.left_side.produc_placeholder.config(text=file_path.split('/')[-1])
                 self.prod_load_file(file_path)  # Assuming 'app' is the createTable instance
             elif file_path.endswith(".ptbl"):
-                self.loaded_ptbl_file = file_path.split('/')[-1]
-                self.left_side.ptable_placeholder.config(text=file_path.split('/')[-1])
                 self.ptbl_load_file(file_path)
             else:
                 print("Invalid file type.")
                 
 
     def prod_load_file(self, file_path):
+        def is_sequence_starting_from_one(arr):
+            # Check if the array is a sequence starting from 1
+            if arr[0] != 1:
+                return False
+
+            for i in range(len(arr) - 1):
+                if arr[i] + 1 != arr[i + 1]:
+                    return False
+            return True
         
         if file_path:
             # remove the table
             self.left_side.remove_prod_table()    
             
-            
             with open(file_path, "r") as file:
                 prod_content = file.read()
             
             prod_content = prod_content.splitlines()
-            before_id = 0
+            line_num = []
+            row = []
             
             for line in prod_content:
                 data = re.split(",", line)
-                data[0] = int(data[0])
+                line_num.append(int(data[0]))
+                row.append(data)
 
-                if(data[0] == (before_id+1)):
-                    """
-                    To populate the prod_content
-                    """
-                    self.prod_content.append(data)
-                    self.left_side.var_used_production_Treeview.insert("", "end", values=data)
+            if is_sequence_starting_from_one(line_num):
+                """
+                To populate the prod_content
+                """
+                self.prod_data = row
+                self.loaded_prod_file = file_path.split('/')[-1]
+                self.left_side.produc_placeholder.config(text=file_path.split('/')[-1])
+                self.left_side.status_label.config(text=f"LOADED: {file_path.split('/')[-1]}" )
+                
+                for x in row:
+                    self.left_side.var_used_production_Treeview.insert("", "end", values=x)
                     self.left_side.var_used_production_Treeview.pack(fill='y', expand=True)
-                    
-                    self.check_loaded()
-                    before_id = before_id + 1
-                    """ END """
-                else:
-                    self.left_side.remove_prod_table()
-                    self.left_side.status_label.configure(text="Prod File Error! Incorrect ID sequence.") # Trap Incorrect ID sequence in prod file
-                    self.prod_content = []
-                    return     
+                
+                self.check_loaded()
+                """ END """
+            else:
+                self.left_side.status_label.configure(text=f"Incorrect ID sequence! {self.loaded_prod_file} is loaded.") # Trap Incorrect ID sequence in prod file
+                
+                for x in self.prod_data:
+                    self.left_side.var_used_production_Treeview.insert("", "end", values=x)
+                    self.left_side.var_used_production_Treeview.pack(fill='y', expand=True)
+                return     
 
     def ptbl_load_file(self, file_path):
         if file_path:
@@ -101,8 +112,13 @@ class ProgramNRRP(tk.Tk):
                 data = file.read()
                 self.extract_ptbl(file_path, data)
             
-            """ END """
-            print(self.ptbl_data)
+            if self.ptbl_data == []:
+                self.left_side.status_label.config(text=f"NO FILE LOADED: Incomplete data in ptbl file")
+            elif self.ptbl_status == True:
+                self.left_side.status_label.config(text=f"LOADED: {file_path.split('/')[-1]}" )
+                self.loaded_ptbl_file = file_path.split('/')[-1]
+                self.left_side.ptable_placeholder.config(text=file_path.split('/')[-1])
+                
             # Extract column headings
             headings = self.ptbl_data[0].strip().split(',')
             self.left_side.var_used_parse_treeview["columns"] = headings
@@ -115,9 +131,9 @@ class ProgramNRRP(tk.Tk):
             for line in self.ptbl_data[1:]:
                 data = line.strip().split(',')
                 self.left_side.var_used_parse_treeview.insert("", "end", values=data)
-            
-        self.left_side.var_used_parse_treeview.pack(fill='y', expand=True)
-        self.check_loaded()
+        
+            self.left_side.var_used_parse_treeview.pack(fill='y', expand=True)
+            self.check_loaded()
         
     def extract_ptbl(self, file_path, data):
         non_term = []
@@ -131,18 +147,20 @@ class ProgramNRRP(tk.Tk):
             row = re.split(",", line)
             
             if terminal_num != len(row):
-                self.left_side.ptable_placeholder.config(text=f"Incomplete data! {self.loaded_ptbl_file} is loaded.")   
+                if self.ptbl_data != []:
+                    self.left_side.status_label.config(text=f"Incomplete data! {self.loaded_ptbl_file} is loaded.")   
+                    self.ptbl_status = False
                 return 
             
-            non_term.append(line[0])
-            content.append(line[1:])
+            non_term.append(row[0])
+            content.append(row[1:])
         
         self.loaded_ptbl_file = file_path.split('/')[-1]   
         self.ptbl_data = data
-        self.ptbl_terminals = terminals 
+        self.ptbl_terminals = terminals[1:] 
         self.ptbl_NT = non_term
         self.ptbl_markers = content
-
+        self.ptbl_status = True
         
     def parse(self, event=None):
         self.right_side.remove_parsing_table()
@@ -187,8 +205,8 @@ class ProgramNRRP(tk.Tk):
             elif self.ptbl_markers[row][col] != '':
                 stack.pop()
                 prod_index = int(self.ptbl_markers[row][col]) - 1 
-                prod = self.prod_content[prod_index][2].split()
-                action = f"Output {stack_top} > {self.prod_content[prod_index][2]}"
+                prod = self.prod_data[prod_index][2].split()
+                action = f"Output {stack_top} > {self.prod_data[prod_index][2]}"
                 push(prod, stack)
             
             reverse_stack = list(reversed(stack))
@@ -240,8 +258,8 @@ class ProgramNRRP(tk.Tk):
     def check_loaded(self):
         self.right_side.remove_parsing_table()
         
-        prod_file_loaded = self.prod_content != []
-        ptbl_file_loaded = self.ptbl_data != []
+        prod_file_loaded = len(self.prod_data) != 0
+        ptbl_file_loaded = len(self.ptbl_data) != 0
         
         if prod_file_loaded and ptbl_file_loaded:
             if os.path.exists(self.file_path):
