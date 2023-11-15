@@ -1,0 +1,17 @@
+Num $,- 0 1 1 $
+Sign Digits $,- 0 1 1 $,Output Num > Sign Digits
+- Digits $,- 0 1 1 $,Output Sign > -
+Digits $,0 1 1 $,Match - 
+Digit More $,0 1 1 $,Output Digits > Digit More
+0 More $,0 1 1 $,Output Digit > 0
+More $,1 1 $,Match 0 
+Digits $,1 1 $,Output More > Digits
+Digit More $,1 1 $,Output Digits > Digit More
+1 More $,1 1 $,Output Digit > 1
+More $,1 $,Match 1 
+Digits $,1 $,Output More > Digits
+Digit More $,1 $,Output Digits > Digit More
+1 More $,1 $,Output Digit > 1
+More $,$,Match 1 
+$,$,Output More > e
+,,Match $
