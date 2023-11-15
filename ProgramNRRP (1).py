@@ -11,8 +11,7 @@ Program Description:
 """
 
 import tkinter as tk
-from tkinter import ttk
-from tkinter import filedialog
+from tkinter import ttk, filedialog, simpledialog
 import re
 import os 
 import csv
@@ -33,6 +32,8 @@ class ProgramNRRP(tk.Tk):
         self.ptbl_NT = []
         
         self.file_path = ''
+        self.loaded_prod_file = ''
+        self.loaded_ptbl_file = ''
         self.left_side = left_section(self)
         self.right_side = right_section(self)
         self.mainloop()
@@ -44,9 +45,11 @@ class ProgramNRRP(tk.Tk):
         if file_path:
             self.left_side.status_label.config(text=f"LOADED: {file_path.split('/')[-1]}" )
             if file_path.endswith(".prod"):
+                self.loaded_prod_file = file_path.split('/')[-1]
                 self.left_side.produc_placeholder.config(text=file_path.split('/')[-1])
                 self.prod_load_file(file_path)  # Assuming 'app' is the createTable instance
             elif file_path.endswith(".ptbl"):
+                self.loaded_ptbl_file = file_path.split('/')[-1]
                 self.left_side.ptable_placeholder.config(text=file_path.split('/')[-1])
                 self.ptblCreateLoadTable(file_path)
             else:
@@ -54,7 +57,6 @@ class ProgramNRRP(tk.Tk):
                 
 
     def prod_load_file(self, file_path):
-        self.check_loaded()
         
         if file_path:
             # remove the table
@@ -115,7 +117,7 @@ class ProgramNRRP(tk.Tk):
             
             for col in headings:
                 self.left_side.var_used_parse_treeview.heading(col, text=col, anchor="center")
-                self.left_side.var_used_parse_treeview.column(col, width=100, anchor="center")  # Adjust the width as needed
+                self.left_side.var_used_parse_treeview.column(col, width=80, anchor="center")  # Adjust the width as needed
 
             # Populate the Treeview with data from the file
             for line in self.ptbl_data[1:]:
@@ -152,13 +154,7 @@ class ProgramNRRP(tk.Tk):
     def parse(self, event=None):
         self.right_side.remove_parsing_table()
 
-        headings = [ 'Stack', 'Input Buffer', 'Action']
-        self.right_side.parsing_treeview["columns"] = headings
-        
-        for col in headings:
-            self.right_side.parsing_treeview.heading(col, text=col, anchor="center")
-            self.right_side.parsing_treeview.column(col, width=150, anchor="center")
-        
+        self.right_side.parsing_treeview.column("#3", width=250, stretch="no")
         def push(prod, stack):
             prod.reverse()
             for symbol in prod:
@@ -230,12 +226,11 @@ class ProgramNRRP(tk.Tk):
         output_filename = self.file_path.split('/')[-1].split('.')[0] + '.prsd'
         output_path = os.path.join(os.path.dirname(self.file_path), output_filename)  
         
-        counter = 1
-        while os.path.exists(output_path):
-            new_output_filename = f"{output_filename.split('.')[0]} ({counter}).prsd"
-            output_path = os.path.join(os.path.dirname(self.file_path), new_output_filename)
-            counter += 1
-
+        output_filename = simpledialog.askstring("Set File Name", "Enter File Name for '.prsd' file")
+        output_filename = f"{output_filename}_{self.loaded_prod_file.replace('.prod', '.prsd')}" 
+        
+        output_path = os.path.join(os.path.dirname(self.file_path), output_filename)
+        
         with open(output_path, 'w', newline='') as output_file:
             writer = csv.writer(output_file)
             # Write the parsing table contents
@@ -243,32 +238,29 @@ class ProgramNRRP(tk.Tk):
                 values = self.right_side.parsing_treeview.item(row)['values']
                 writer.writerow(values)
 
-        self.right_side.parsing_placeholder.config(text=f"Valid. Please see {output_path.split('/')[-1]}")
+        self.right_side.parsing_placeholder.config(text=f"Valid. Please see {output_filename}")
         
     def check_loaded(self):
+        self.right_side.remove_parsing_table()
+        
         prod_file_loaded = self.prod_content != []
         ptbl_file_loaded = self.ptbl_data != []
         
-        if prod_file_loaded and ptbl_file_loaded and self.file_path.endswith(".prod"):
-            ptbl_file_path = self.file_path.replace(".prod", ".ptbl")
-            if os.path.exists(ptbl_file_path):
+        if prod_file_loaded and ptbl_file_loaded:
+            if os.path.exists(self.file_path):
                 # Check if filenames match
-                prod_filename = os.path.basename(self.file_path)
-                ptbl_filename = os.path.basename(ptbl_file_path)
-
-                if prod_filename.split('.')[0] == ptbl_filename.split('.')[0]:
+                if self.loaded_prod_file.split('.')[0] == self.loaded_ptbl_file.split('.')[0]:
                     self.left_side.parse_button.configure(state=tk.NORMAL)
                     self.right_side.parsing_placeholder.config(text="Filenames are the same")
                     self.left_side.parse_button.pack(side = 'left')
                     return  # Return after enabling the parse button
                 else:
+                    self.left_side.parse_button.config(state=tk.DISABLED)
                     self.right_side.parsing_placeholder.config(text="Filenames are not the same")
             else:
                 self.right_side.parsing_placeholder.config(text="Missing .ptbl file")
-        # self.left_side.parse_button.configure(state=tk.DISABLED)
-        # self.right_side.parsing_placeholder.config(text="")
-
-
+        
+        
 
             
 class left_section(tk.Frame):
@@ -375,6 +367,7 @@ class left_section(tk.Frame):
 
         self.var_used_parse_treeview.pack_forget()
         self.var_used_parse_treeview.column("#0", width = 0, stretch = "no")     
+        
 class right_section(tk.Frame):
     def __init__(self, parent):
         # INITIALIZE LEFT SECTION FRAME
@@ -395,13 +388,22 @@ class right_section(tk.Frame):
         self.parsing_placeholder.pack(side = "top", pady=[0, 10])
         
         self.parsing_treeview = ttk.Treeview(self, height=50)
+        
+        headings = [ 'Stack', 'Input Buffer', 'Action']
+        self.parsing_treeview["columns"] = headings
+        
+        for col in headings:
+            self.parsing_treeview.heading(col, text=col, anchor="center")
+            self.parsing_treeview.column(col, anchor="center")
+            
+        self.parsing_treeview.column("#0", width=0, stretch = "no")
+        
         self.parsing_treeview.pack(side='top', fill='both', expand=True)
     
     def remove_parsing_table(self):
         for item in self.parsing_treeview.get_children():
                 self.parsing_treeview.delete(item)
 
-        self.parsing_treeview.pack_forget()
-        self.parsing_treeview.column("#0", width=0, stretch = "no")
+        # self.parsing_treeview.column("#0", width=0, stretch = "no")
         
 ProgramNRRP(title="NRRP App", size="1280x720")
