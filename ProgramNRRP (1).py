@@ -61,32 +61,33 @@ class ProgramNRRP(tk.Tk):
             # remove the table
             self.left_side.remove_prod_table()    
             
-            """
-                To populate the prod_content
-            """
+            
             with open(file_path, "r") as file:
                 prod_content = file.read()
             
             prod_content = prod_content.splitlines()
+            before_id = 0
             
             for line in prod_content:
                 data = re.split(",", line)
                 data[0] = int(data[0])
-                self.prod_content.append(data)
-                self.left_side.var_used_production_Treeview.insert("", "end", values=data)
-            
-            """ END """
 
-            # Assuming the first row contains column headings
-            headings = ['ID', 'NT', 'P']
-            self.left_side.var_used_production_Treeview["columns"] = headings
-            
-            for col in headings:
-                self.left_side.var_used_production_Treeview.heading(col, text=col, anchor="center")
-                self.left_side.var_used_production_Treeview.column(col, width=100, anchor="center")  # Adjust the width as needed
-            
-        self.left_side.var_used_production_Treeview.pack(fill='y', expand=True)
-        self.check_loaded()
+                if(data[0] == (before_id+1)):
+                    """
+                    To populate the prod_content
+                    """
+                    self.prod_content.append(data)
+                    self.left_side.var_used_production_Treeview.insert("", "end", values=data)
+                    self.left_side.var_used_production_Treeview.pack(fill='y', expand=True)
+                    
+                    self.check_loaded()
+                    before_id = before_id + 1
+                    """ END """
+                else:
+                    self.left_side.remove_prod_table()
+                    self.left_side.status_label.configure(text="Prod File Error! Incorrect ID sequence.") # Trap Incorrect ID sequence in prod file
+                    self.prod_content = []
+                    return     
 
     def ptblCreateLoadTable(self, file_path):
         if file_path:
@@ -201,24 +202,28 @@ class ProgramNRRP(tk.Tk):
         output_path = os.path.join(os.path.dirname(self.file_path), output_filename)  
         
         output_filename = simpledialog.askstring("Set File Name", "Enter File Name for '.prsd' file")
-        output_filename = f"{output_filename}_{self.loaded_prod_file.replace('.prod', '.prsd')}" 
-        
-        output_path = os.path.join(os.path.dirname(self.file_path), output_filename)
-        
-        with open(output_path, 'w', newline='') as output_file:
-            writer = csv.writer(output_file)
-            # Write the parsing table contents
-            for row in self.right_side.parsing_treeview.get_children():
-                values = self.right_side.parsing_treeview.item(row)['values']
-                writer.writerow(values)
-
-        self.right_side.parsing_placeholder.config(text=f"Valid. Please see {output_filename}")
+        if(output_filename != None ):
+            output_filename = f"{output_filename}_{self.loaded_prod_file.replace('.prod', '.prsd')}" 
+            
+            output_path = os.path.join(os.path.dirname(self.file_path), output_filename)
+            
+            with open(output_path, 'w', newline='') as output_file:
+                writer = csv.writer(output_file)
+                # Write the parsing table contents
+                for row in self.right_side.parsing_treeview.get_children():
+                    values = self.right_side.parsing_treeview.item(row)['values']
+                    writer.writerow(values)
+                    
+            self.right_side.parsing_placeholder.config(text=f"Valid. Please see {output_filename}")
+            
+        else:
+            return
         
     def check_loaded(self):
         self.right_side.remove_parsing_table()
         
-        prod_file_loaded = self.prod_content != []
-        ptbl_file_loaded = self.ptbl_content != []
+        prod_file_loaded = len(self.prod_content) != 0
+        ptbl_file_loaded = len(self.ptbl_content) != 0
         
         if prod_file_loaded and ptbl_file_loaded:
             if os.path.exists(self.file_path):
@@ -233,6 +238,8 @@ class ProgramNRRP(tk.Tk):
                     self.right_side.parsing_placeholder.config(text="Filenames are not the same")
             else:
                 self.right_side.parsing_placeholder.config(text="Missing .ptbl file")
+        else:
+            self.right_side.parsing_placeholder.config(text="One of the loaded Files are empty")
         
         
 
@@ -278,8 +285,17 @@ class left_section(tk.Frame):
         
          # Create a listbox to display the content (you can replace this with your own content)
         self.var_used_production_Treeview = ttk.Treeview(self.prodFrame, yscrollcommand=self.var_used_scrollbar.set)
+        
+        headings = ['ID', 'NT', 'P']
+        self.var_used_production_Treeview["columns"] = headings
+        
+        for col in headings:
+            self.var_used_production_Treeview.heading(col, text=col, anchor="center") # Assuming the first row contains column headings
+            self.var_used_production_Treeview.column(col, width=100, anchor="center")  # Adjust the width as needed
+    
+        self.var_used_production_Treeview.column("#0", width=0, stretch='no')
         self.var_used_production_Treeview.pack(fill='y', expand=True)
-
+        
         # Configure the scrollbar to work with the listbox
         self.var_used_scrollbar.config(command=self.var_used_production_Treeview.yview)
         
@@ -332,7 +348,6 @@ class left_section(tk.Frame):
         for item in self.var_used_production_Treeview.get_children():
                 self.var_used_production_Treeview.delete(item)
 
-        self.var_used_production_Treeview.pack_forget()
         self.var_used_production_Treeview.column("#0", width = 0, stretch = "no")
     
     def remove_parse_table(self):
