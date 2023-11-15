@@ -218,7 +218,7 @@ class ProgramNRRP(tk.Tk):
         
         counter = 1
         while os.path.exists(output_path):
-            new_output_filename = f"{output_filename.split('.')[0]}({counter}).prsd"
+            new_output_filename = f"{output_filename.split('.')[0]} ({counter}).prsd"
             output_path = os.path.join(os.path.dirname(self.file_path), new_output_filename)
             counter += 1
 
