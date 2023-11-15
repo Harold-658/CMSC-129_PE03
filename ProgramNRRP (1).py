@@ -223,7 +223,7 @@ class ProgramNRRP(tk.Tk):
         prod_file_loaded = self.prod_content != []
         ptbl_file_loaded = self.ptbl_content != []
         
-        if prod_file_loaded and ptbl_file_loaded and self.file_path.endswith(".prod"):
+        if prod_file_loaded and ptbl_file_loaded and (self.file_path.endswith(".prod") or self.file_path.endswith(".ptbl")):
             ptbl_file_path = self.file_path.replace(".prod", ".ptbl")
             if os.path.exists(ptbl_file_path):
                 # Check if filenames match
