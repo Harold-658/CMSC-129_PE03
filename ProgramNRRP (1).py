@@ -211,10 +211,16 @@ class ProgramNRRP(tk.Tk):
             to_display = ['ERROR','ERROR','ERROR']
             
         self.right_side.parsing_treeview.insert("", "end", values=to_display)
-        self.right_side.parsing_treeview.pack(side='top', anchor='w', fill='y')      
-        
+        self.right_side.parsing_treeview.pack(side='top', anchor='w', fill='y')    
+
         output_filename = self.file_path.split('/')[-1].split('.')[0] + '.prsd'
-        output_path = os.path.join(os.path.dirname(self.file_path), output_filename)
+        output_path = os.path.join(os.path.dirname(self.file_path), output_filename)  
+        
+        counter = 1
+        while os.path.exists(output_path):
+            new_output_filename = f"{output_filename.split('.')[0]} ({counter}).prsd"
+            output_path = os.path.join(os.path.dirname(self.file_path), new_output_filename)
+            counter += 1
 
         with open(output_path, 'w', newline='') as output_file:
             writer = csv.writer(output_file)
@@ -223,11 +229,31 @@ class ProgramNRRP(tk.Tk):
                 values = self.right_side.parsing_treeview.item(row)['values']
                 writer.writerow(values)
 
-        self.right_side.parsing_placeholder.config(text=f"Valid. Please see {output_filename}")
+        self.right_side.parsing_placeholder.config(text=f"Valid. Please see {output_path.split('/')[-1]}")
         
     def check_loaded(self):
-        if(self.prod_content != [] and self.ptbl_content != []):
-            self.left_side.parse_button.configure(state=tk.NORMAL)
+        prod_file_loaded = self.prod_content != []
+        ptbl_file_loaded = self.ptbl_content != []
+        
+        if prod_file_loaded and ptbl_file_loaded and self.file_path.endswith(".prod"):
+            ptbl_file_path = self.file_path.replace(".prod", ".ptbl")
+            if os.path.exists(ptbl_file_path):
+                # Check if filenames match
+                prod_filename = os.path.basename(self.file_path)
+                ptbl_filename = os.path.basename(ptbl_file_path)
+                if prod_filename.split('.')[0] == ptbl_filename.split('.')[0]:
+                    self.left_side.parse_button.configure(state=tk.NORMAL)
+                    self.right_side.parsing_placeholder.config(text="Filenames are the same")
+                    return  # Return after enabling the parse button
+                else:
+                    self.right_side.parsing_placeholder.config(text="Filenames are not the same")
+            else:
+                self.right_side.parsing_placeholder.config(text="Missing .ptbl file")
+        self.left_side.parse_button.configure(state=tk.DISABLED)
+        self.right_side.parsing_placeholder.config(text="")
+
+
+
             
 class left_section(tk.Frame):
     
