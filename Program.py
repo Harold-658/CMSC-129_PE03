@@ -56,7 +56,6 @@ class Program(tk.Tk):
             self.prod_file_name = file_details[0]
             prod_content = file.read()          
             self.getProdContent(strip = prod_content.splitlines())
-            
         elif file_details[-1] == "ptbl":
             self.ptbl_file_name = file_details[0]
             ptbl_content = file.read()

@@ -25,7 +25,7 @@ class ProgramNRRP(tk.Tk):
         self.geometry(size)
         self.state('zoomed')
         self.resizable(False,False)
-        # From Harold
+        
         self.prod_content = []
         self.ptbl_content = []
         self.ptbl_terminals = []
@@ -56,12 +56,8 @@ class ProgramNRRP(tk.Tk):
         self.check_loaded()
         
         if file_path:
-            
-            self.prod_content = []
-            
             # remove the table
             self.left_side.remove_prod_table()    
-            
             
             """
                 To populate the prod_content
@@ -72,21 +68,12 @@ class ProgramNRRP(tk.Tk):
             prod_content = prod_content.splitlines()
             
             for line in prod_content:
-                str = re.split(",", line)
-                str[0] = int(str[0])
-                self.prod_content.append(str)
+                data = re.split(",", line)
+                data[0] = int(data[0])
+                self.prod_content.append(data)
+                self.left_side.var_used_production_Treeview.insert("", "end", values=data)
             
             """ END """
-            
-            # Read the content of the selected file
-            with open(file_path, "r") as file:
-                lines = file.readlines()
-
-            # Assuming each line in the file represents a row in the table
-            for line in lines:
-                data = line.strip().split(',')
-                data[0] = int(data[0])
-                self.left_side.var_used_production_Treeview.insert("", "end", values=data)
 
             # Assuming the first row contains column headings
             headings = ['ID', 'NT', 'P']
@@ -102,10 +89,6 @@ class ProgramNRRP(tk.Tk):
     def ptblCreateLoadTable(self, file_path):
         if file_path:
             self.left_side.remove_parse_table()
-
-            self.ptbl_content = []
-            self.ptbl_NT = []
-            self.ptbl_terminals = []
             
             """
                 To populate the ptbl lists
@@ -118,18 +101,14 @@ class ProgramNRRP(tk.Tk):
             self.ptbl_terminals = re.split(",", ptbl_content[0])[1:]    
         
             for line in ptbl_content[1:]:
-                str = re.split(",", line)
-                self.ptbl_NT.append(str[0])
-                self.ptbl_content.append(str[1:])
+                data = re.split(",", line)
+                self.ptbl_NT.append(data[0])
+                self.ptbl_content.append(data[1:])
             
             """ END """
             
-            # Read the content of the selected file
-            with open(file_path, "r") as file:
-                lines = file.readlines()
-            
             # Extract column headings
-            headings = lines[0].strip().split(',')
+            headings = ptbl_content[0].strip().split(',')
             self.left_side.var_used_parse_treeview["columns"] = headings
             
             for col in headings:
@@ -137,7 +116,7 @@ class ProgramNRRP(tk.Tk):
                 self.left_side.var_used_parse_treeview.column(col, width=100, anchor="center")  # Adjust the width as needed
 
             # Populate the Treeview with data from the file
-            for line in lines[1:]:
+            for line in ptbl_content[1:]:
                 data = line.strip().split(',')
                 self.left_side.var_used_parse_treeview.insert("", "end", values=data)
             
@@ -174,6 +153,7 @@ class ProgramNRRP(tk.Tk):
         stack.reverse()
         self.right_side.parsing_treeview.insert("", "end", values=[stack, input_buffer])
         stack.reverse()
+        
         while(stack_top != '$'):
             action = " "
             row = self.ptbl_NT.index(stack_top) if stack_top in self.ptbl_NT else None
@@ -183,11 +163,11 @@ class ProgramNRRP(tk.Tk):
                 stack.pop()
                 action = f"Match {input_buffer[curr_input_index]} "
                 curr_input_index+=1
-            elif stack_top in self.ptbl_terminals: # basta error
-                action = 'ERROR Basta Error' 
+            elif stack_top in self.ptbl_terminals:
+                action = 'ERROR! Top stack terminal does not match with current symbol in input buffer.' 
                 break
             elif row == None or col == None or self.ptbl_content[row][col] == '': # if basta uy
-                action = 'ERROR basta uy'
+                action = 'ERROR! No production found.'
                 break
             elif self.ptbl_content[row][col] != '':
                 stack.pop()
@@ -203,15 +183,23 @@ class ProgramNRRP(tk.Tk):
             
             stack_top = stack[-1]
         
-        if( stack_top == '$'):
+        if( stack_top == '$' and input_buffer[curr_input_index] == '$'):
             to_display = ['','', "Match $"]
             self.right_side.parsing_placeholder.config(text=f"Valid. Please see {self.file_path.split('/')[-1].split('.')[0]}.prsd")
+            self.right_side.parsing_treeview.insert("", "end", values=to_display)
+            self.right_side.parsing_treeview.pack(side='top', anchor='w', fill='y')
+            
+            if(curr_input_index != len(input_buffer)-1):
+                self.right_side.parsing_placeholder.config(text="ERROR")
+                to_display = ['','',"ERROR! Does not reach end of input buffer."]
+                self.right_side.parsing_treeview.insert("", "end", values=to_display)
+                self.right_side.parsing_treeview.pack(side='top', anchor='w', fill='y')  
         else:
             self.right_side.parsing_placeholder.config(text="ERROR")
-            to_display = ['ERROR','ERROR','ERROR']
-            
-        self.right_side.parsing_treeview.insert("", "end", values=to_display)
-        self.right_side.parsing_treeview.pack(side='top', anchor='w', fill='y')      
+            to_display = ['','',action] 
+            self.right_side.parsing_treeview.insert("", "end", values=to_display)
+            self.right_side.parsing_treeview.pack(side='top', anchor='w', fill='y')  
+        
         
         output_filename = self.file_path.split('/')[-1].split('.')[0] + '.prsd'
         output_path = os.path.join(os.path.dirname(self.file_path), output_filename)
