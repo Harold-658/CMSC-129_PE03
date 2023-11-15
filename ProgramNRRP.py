@@ -1,13 +1,15 @@
-#Programming Exercise 02: Lexical Analyzer
+#Programming Exercise 03: Non-Recursive Predictive Parsing
 """Programmers:                         Student No.
     Francis Albert Celeste              2020-09429
     Alfred Lu                           2020-09814
     Harold Clyde Valiente               2020-05249
 
 Program Description:
-   The python program has a partial implementation of a compiler for a customized programming language (PL). 
-   A lexical analyzer that has partial implementation requires the software to read custom programming language code, 
-   do lexical analysis, and output the analysis results.
+   	The program checks if a given string (a list of tokens) is acceptable 
+    using data from a parse table and the productions that go with it. 
+    It is a simple non-recursive predictive parser. The following texts go 
+    into more depth about the program.
+
 """
 
 import tkinter as tk
@@ -79,13 +81,14 @@ class ProgramNRRP(tk.Tk):
                 row.append(data)
 
             if is_sequence_starting_from_one(line_num):
+                
                 """
                 To populate the prod_content
                 """
                 self.prod_data = row
                 self.loaded_prod_file = file_path.split('/')[-1]
                 self.left_side.produc_placeholder.config(text=file_path.split('/')[-1])
-                self.left_side.status_label.config(text=f"LOADED: {file_path.split('/')[-1]}" )
+                self.left_side.status_label.config(text=f"LOADED: {file_path.split('/')[-1]}" ,foreground = "green" )
                 
                 for x in row:
                     self.left_side.var_used_production_Treeview.insert("", "end", values=x)
@@ -94,7 +97,7 @@ class ProgramNRRP(tk.Tk):
                 self.check_loaded()
                 """ END """
             else:
-                self.left_side.status_label.configure(text=f"Incorrect ID sequence! {self.loaded_prod_file} is loaded.") # Trap Incorrect ID sequence in prod file
+                self.left_side.status_label.configure(text=f"Incorrect ID sequence! {self.loaded_prod_file} is loaded.", foreground="maroon") # Trap Incorrect ID sequence in prod file
                 
                 for x in self.prod_data:
                     self.left_side.var_used_production_Treeview.insert("", "end", values=x)
@@ -113,9 +116,9 @@ class ProgramNRRP(tk.Tk):
                 self.extract_ptbl(file_path, data)
             
             if self.ptbl_data == []:
-                self.left_side.status_label.config(text=f"NO FILE LOADED: Incomplete data in ptbl file")
+                self.left_side.status_label.config(text=f"NO FILE LOADED: Incomplete data in ptbl file", foreground="maroon")
             elif self.ptbl_status == True:
-                self.left_side.status_label.config(text=f"LOADED: {file_path.split('/')[-1]}" )
+                self.left_side.status_label.config(text=f"LOADED: {file_path.split('/')[-1]}", foreground="green" )
                 self.loaded_ptbl_file = file_path.split('/')[-1]
                 self.left_side.ptable_placeholder.config(text=file_path.split('/')[-1])
                 
@@ -148,7 +151,7 @@ class ProgramNRRP(tk.Tk):
             
             if terminal_num != len(row):
                 if self.ptbl_data != []:
-                    self.left_side.status_label.config(text=f"Incomplete data! {self.loaded_ptbl_file} is loaded.")   
+                    self.left_side.status_label.config(text=f"Incomplete data! {self.loaded_ptbl_file} is loaded.", foreground="maroon")   
                     self.ptbl_status = False
                 return 
             
@@ -218,17 +221,17 @@ class ProgramNRRP(tk.Tk):
         
         if( stack_top == '$' and input_buffer[curr_input_index] == '$'):
             to_display = ['','', "Match $"]
-            self.right_side.parsing_placeholder.config(text=f"Valid. Please see {self.file_path.split('/')[-1].split('.')[0]}.prsd")
+            self.right_side.parsing_placeholder.config(text=f"Valid. Please see {self.file_path.split('/')[-1].split('.')[0]}.prsd", foreground="green")
             self.right_side.parsing_treeview.insert("", "end", values=to_display)
             self.right_side.parsing_treeview.pack(side='top', anchor='w', fill='y')
             
             if(curr_input_index != len(input_buffer)-1):
-                self.right_side.parsing_placeholder.config(text="ERROR")
+                self.right_side.parsing_placeholder.config(text="ERROR", foreground="maroon")
                 to_display = ['','',"ERROR! Does not reach end of input buffer."]
                 self.right_side.parsing_treeview.insert("", "end", values=to_display)
                 self.right_side.parsing_treeview.pack(side='top', anchor='w', fill='y')  
         else:
-            self.right_side.parsing_placeholder.config(text="ERROR")
+            self.right_side.parsing_placeholder.config(text="ERROR", foreground="maroon")
             to_display = ['','',action] 
             self.right_side.parsing_treeview.insert("", "end", values=to_display)
             self.right_side.parsing_treeview.pack(side='top', anchor='w', fill='y')  
@@ -250,7 +253,7 @@ class ProgramNRRP(tk.Tk):
                     values = self.right_side.parsing_treeview.item(row)['values']
                     writer.writerow(values)
                     
-            self.right_side.parsing_placeholder.config(text=f"Valid. Please see {output_filename}")
+            self.right_side.parsing_placeholder.config(text=f"Output file has been created. Please see {output_filename}", foreground="green")
             
         else:
             return
@@ -266,19 +269,16 @@ class ProgramNRRP(tk.Tk):
                 # Check if filenames match
                 if self.loaded_prod_file.split('.')[0] == self.loaded_ptbl_file.split('.')[0]:
                     self.left_side.parse_button.configure(state=tk.NORMAL)
-                    self.right_side.parsing_placeholder.config(text="Filenames are the same")
+                    self.right_side.parsing_placeholder.config(text="Filenames are the same", foreground="green")
                     self.left_side.parse_button.pack(side = 'left')
                     return  # Return after enabling the parse button
                 else:
                     self.left_side.parse_button.config(state=tk.DISABLED)
-                    self.right_side.parsing_placeholder.config(text="Filenames are not the same")
+                    self.right_side.parsing_placeholder.config(text="Filenames are not the same", foreground="maroon")
             else:
-                self.right_side.parsing_placeholder.config(text="Missing .ptbl file")
+                self.right_side.parsing_placeholder.config(text="Missing .ptbl file", foreground="maroon")
         else:
-            self.right_side.parsing_placeholder.config(text="One of the loaded Files are empty")
-        
-        
-
+            self.right_side.parsing_placeholder.config(text="One of the loaded files are empty", foreground="maroon")
             
 class left_section(tk.Frame):
     
@@ -308,7 +308,7 @@ class left_section(tk.Frame):
         self.produc_label = ttk.Label(self.frame_2, text="PRODUCTIONS:", font=("Helvetica", 12, "bold"))
         self.produc_label.pack(side = "top")
         
-        self.produc_placeholder = ttk.Label(self.frame_2, text="", font=("Helvetica", 10))
+        self.produc_placeholder = ttk.Label(self.frame_2, text="", font=("Verdana", 10, "bold"))
         self.produc_placeholder.pack(side = "top", anchor='w', pady=[0, 10])
 
         # Create variable used display frame
@@ -342,7 +342,7 @@ class left_section(tk.Frame):
         self.ptable_label = ttk.Label(self.frame_3, text="PARSE TABLE:", font=("Helvetica", 12, "bold"))
         self.ptable_label.pack(side = 'top')
 
-        self.ptable_placeholder = ttk.Label(self.frame_3, text="", font=("Helvetica", 10))
+        self.ptable_placeholder = ttk.Label(self.frame_3, text="", font=("Verdana", 10, "bold"))
         self.ptable_placeholder.pack(side = 'top',anchor='w', pady=[0, 10])
 
         # PARSE TABLE
@@ -409,7 +409,7 @@ class right_section(tk.Frame):
         self.parsing_label = ttk.Label(self.frame_1, text="PARSING:", font=("Helvetica", 12, "bold"))
         self.parsing_label.pack(side = "top", anchor='w')
         
-        self.parsing_placeholder = ttk.Label(self.frame_1, text="", font=("Helvetica", 8))
+        self.parsing_placeholder = ttk.Label(self.frame_1, text="", font=("Tahoma", 12, "bold"))
         self.parsing_placeholder.pack(side = "top", pady=[0, 10])
         
         self.parsing_treeview = ttk.Treeview(self, height=50)
