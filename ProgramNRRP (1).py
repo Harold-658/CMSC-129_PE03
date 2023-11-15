@@ -229,16 +229,18 @@ class ProgramNRRP(tk.Tk):
                 # Check if filenames match
                 prod_filename = os.path.basename(self.file_path)
                 ptbl_filename = os.path.basename(ptbl_file_path)
+
                 if prod_filename.split('.')[0] == ptbl_filename.split('.')[0]:
                     self.left_side.parse_button.configure(state=tk.NORMAL)
                     self.right_side.parsing_placeholder.config(text="Filenames are the same")
+                    self.left_side.parse_button.pack(side = 'left')
                     return  # Return after enabling the parse button
                 else:
                     self.right_side.parsing_placeholder.config(text="Filenames are not the same")
             else:
                 self.right_side.parsing_placeholder.config(text="Missing .ptbl file")
-        self.left_side.parse_button.configure(state=tk.DISABLED)
-        self.right_side.parsing_placeholder.config(text="")
+        # self.left_side.parse_button.configure(state=tk.DISABLED)
+        # self.right_side.parsing_placeholder.config(text="")
 
 
 
