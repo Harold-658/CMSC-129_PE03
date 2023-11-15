@@ -244,8 +244,8 @@ class left_section(tk.Frame):
         self.frame_1.pack(side = "top", anchor='nw' ,pady = [0, 15])
         
         # self.load_button = tk.Button(self.frame_1, text="Load", command=self.load_button_command, width=10)
-        self.load_button = ttk.Button(self.frame_1, text="Load", command=parent.load_button_command, width=10)
-        self.load_button.pack(side = "left")
+        self.load_button = tk.Button(self.frame_1, text="Load", command=parent.load_button_command, width=15, padx=5, pady=5, relief='raised')
+        self.load_button.pack(side = "left", padx=[0,20])
         
         self.status_label = ttk.Label(self.frame_1, text="", font=("Helvetica", 12, 'bold'))
         self.status_label.pack(side = "left")
@@ -349,7 +349,7 @@ class right_section(tk.Frame):
         self.parsing_label = ttk.Label(self.frame_1, text="PARSING:", font=("Helvetica", 12, "bold"))
         self.parsing_label.pack(side = "top", anchor='w')
         
-        self.parsing_placeholder = ttk.Label(self.frame_1, text="", font=("Helvetica", 8))
+        self.parsing_placeholder = ttk.Label(self.frame_1, text="", font=("Helvetica", 10))
         self.parsing_placeholder.pack(side = "top", pady=[0, 10])
         
         self.parsing_treeview = ttk.Treeview(self, height=50)
