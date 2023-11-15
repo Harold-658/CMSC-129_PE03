@@ -5,11 +5,8 @@
     Harold Clyde Valiente               2020-05249
 
 Program Description:
-   	The program checks if a given string (a list of tokens) is acceptable 
-    using data from a parse table and the productions that go with it. 
-    It is a simple non-recursive predictive parser. The following texts go 
-    into more depth about the program.
-
+   The python program implements a non-recursive predictive parser that checks if a given sequence of tokens is valid based on 
+   the given syntactic rules (parse table and productions).
 """
 
 import tkinter as tk
@@ -18,7 +15,7 @@ import re
 import os 
 import csv
 
-class ProgramNRRP(tk.Tk):
+class ProgramNRPP(tk.Tk):
     
     def __init__(self, title, size):
         super().__init__()
@@ -28,6 +25,7 @@ class ProgramNRRP(tk.Tk):
         self.resizable(False,False)
         
         self.prod_data = []
+        self.prod_status = None
         self.ptbl_data = []
         self.ptbl_markers = []
         self.ptbl_terminals = []
@@ -40,92 +38,139 @@ class ProgramNRRP(tk.Tk):
         self.left_side = left_section(self)
         self.right_side = right_section(self)
         self.mainloop()
-        
+
+    """
+        This is a function that executes the loading of the input files into the program when the "LOAD" button is pressed.
+        Input: None
+        Output: None
+    """
     def load_button_command(self):
-        file_path = filedialog.askopenfilename(filetypes=[("Production Files", "*.prod;*.ptbl")])
-        self.file_path = file_path
+        # Asks user to choose one input file (.prod or .ptbl) from a directory
+        file_path = filedialog.askopenfilename(filetypes=[("Parser Input Files", "*.prod;*.ptbl")])
+        # self.file_path = file_path
+        
         if file_path:
-            if file_path.endswith(".prod"):
-                self.prod_load_file(file_path)  # Assuming 'app' is the createTable instance
-            elif file_path.endswith(".ptbl"):
+            if file_path.endswith(".prod"):     # For loading .prod files
+                self.file_path = file_path
+                self.prod_load_file(file_path)
+            elif file_path.endswith(".ptbl"):   # For loading .ptbl files
                 self.ptbl_load_file(file_path)
             else:
-                print("Invalid file type.")
+                print("Invalid file type!")
                 
-
+    """
+        This is a function that loads a production file into the program when a .prod file is selected by a user.
+        It uses the file's path to execute the function.
+        Input: File path of the chosen production file
+        Output: None
+    """
     def prod_load_file(self, file_path):
+        """
+            This is a function that checks if the sequence of the line number in the first column of the .prod file is from
+            1 to n.
+            Input: Line number sequence in an array
+            Output: Bool value (True or False)
+        """
         def is_sequence_starting_from_one(arr):
-            # Check if the array is a sequence starting from 1
+            # Checks if the array is a sequence starting from 1
             if arr[0] != 1:
                 return False
 
+            # Checks if the difference between each element and its next element is 1 
             for i in range(len(arr) - 1):
                 if arr[i] + 1 != arr[i + 1]:
                     return False
             return True
         
         if file_path:
-            # remove the table
+            # removes the table
             self.left_side.remove_prod_table()    
             
+            # Opens and reads the .prod file
             with open(file_path, "r") as file:
                 prod_content = file.read()
             
+            # Splits the content of .prod file to lines
             prod_content = prod_content.splitlines()
             line_num = []
             row = []
+            self.prod_status = True
             
+            # Extracts the contents of the .prod file
             for line in prod_content:
-                data = re.split(",", line)
-                line_num.append(int(data[0]))
+                data = re.split(",", line) # Splits each line content to individual symbol
+                line_num.append(int(data[0])) # Collects the line numbers
                 row.append(data)
+                print(len(data))
+                if len(data) != 3:
+                    self.prod_status = False
+                    break
 
-            if is_sequence_starting_from_one(line_num):
+            if self.prod_data == [] and self.prod_status == False:
+                self.left_side.status_label.config(text=f"NO FILE LOADED: Production file cannot be loaded")
+            elif is_sequence_starting_from_one(line_num) and self.prod_status == True: # When the line number sequence follows the 1 to n sequence and have complete data
+                """
+                    Populates the variables that holds necessary data of the .prod file
+                """
+                self.prod_data = row                                # Contents of the loaded .prod file
+                self.loaded_prod_file = file_path.split('/')[-1]    # Stores file name of the loaded .prod file
                 
-                """
-                To populate the prod_content
-                """
-                self.prod_data = row
-                self.loaded_prod_file = file_path.split('/')[-1]
+                # Displays status message in the NRD parser UI
                 self.left_side.produc_placeholder.config(text=file_path.split('/')[-1])
-                self.left_side.status_label.config(text=f"LOADED: {file_path.split('/')[-1]}" ,foreground = "green" )
+                self.left_side.status_label.config(text=f"LOADED: {file_path.split('/')[-1]}",foreground = "green" )
                 
+                # Displays the .prod file as a production table
                 for x in row:
                     self.left_side.var_used_production_Treeview.insert("", "end", values=x)
                     self.left_side.var_used_production_Treeview.pack(fill='y', expand=True)
                 
-                self.check_loaded()
-                """ END """
-            else:
-                self.left_side.status_label.configure(text=f"Incorrect ID sequence! {self.loaded_prod_file} is loaded.", foreground="maroon") # Trap Incorrect ID sequence in prod file
+                self.check_loaded()     # Checks the loaded input files
+            elif is_sequence_starting_from_one(line_num) and self.prod_status == False: # When the line number sequence follows the 1 to n sequence but has incomplete data
+                self.left_side.status_label.configure(text=f"Incomplete columns in each non-terminal! {self.loaded_prod_file} is loaded.", foreground = "maroon") # Trap Incorrect ID sequence in prod file
                 
+                # Displays the previous successfully loaded .prod file as a production table
+                for x in self.prod_data:
+                    self.left_side.var_used_production_Treeview.insert("", "end", values=x)
+                    self.left_side.var_used_production_Treeview.pack(fill='y', expand=True)
+                return 
+            else: # When the line number sequence does not follows the 1 to n sequence
+                self.left_side.status_label.configure(text=f"Incorrect ID sequence! {self.loaded_prod_file} is loaded." ,foreground = "maroon") # Trap Incorrect ID sequence in prod file
+                
+                # Displays the previous successfully loaded .prod file as a production table
                 for x in self.prod_data:
                     self.left_side.var_used_production_Treeview.insert("", "end", values=x)
                     self.left_side.var_used_production_Treeview.pack(fill='y', expand=True)
                 return     
 
+    """
+        This is a function that loads a parse table file into the program when a .ptbl file is selected by a user.
+        It uses the file's path to execute the function.
+        Input: File path of the chosen parse table file
+        Output: None
+    """
     def ptbl_load_file(self, file_path):
         if file_path:
-            self.left_side.remove_parse_table()
+            self.left_side.remove_parse_table() # Removes the table
             
-            """
-                To populate the ptbl lists
-            """
+            # Opens the selected .ptbl file
             with open(file_path, "r") as file:
-                data = file.read()
-                self.extract_ptbl(file_path, data)
+                data = file.read()  # Reads the loaded .ptbl file
+                self.extract_ptbl(file_path, data)  # Extracts the contents of the .ptbl file
             
+             # When the parse table file loading is unsuccessful and no .ptbl file is previously loaded successfully
             if self.ptbl_data == []:
-                self.left_side.status_label.config(text=f"NO FILE LOADED: Incomplete data in ptbl file", foreground="maroon")
+                self.left_side.status_label.config(text=f"NO FILE LOADED: Incomplete data in ptbl file" ,foreground = "maroon")
+             # When the parse table file loading is unsuccessful and there is a .ptbl file previously loaded successfully
             elif self.ptbl_status == True:
-                self.left_side.status_label.config(text=f"LOADED: {file_path.split('/')[-1]}", foreground="green" )
+                self.left_side.status_label.config(text=f"LOADED: {file_path.split('/')[-1]}" ,foreground = "green")
                 self.loaded_ptbl_file = file_path.split('/')[-1]
                 self.left_side.ptable_placeholder.config(text=file_path.split('/')[-1])
                 
-            # Extract column headings
+            # Extracts the column headings
             headings = self.ptbl_data[0].strip().split(',')
             self.left_side.var_used_parse_treeview["columns"] = headings
             
+            # Creates the parse table UI
             for col in headings:
                 self.left_side.var_used_parse_treeview.heading(col, text=col, anchor="center")
                 self.left_side.var_used_parse_treeview.column(col, width=80, anchor="center")  # Adjust the width as needed
@@ -136,76 +181,103 @@ class ProgramNRRP(tk.Tk):
                 self.left_side.var_used_parse_treeview.insert("", "end", values=data)
         
             self.left_side.var_used_parse_treeview.pack(fill='y', expand=True)
-            self.check_loaded()
-        
+            self.check_loaded()     # Checks the loaded input files
+    
+    """
+        This is a function that extracts the content of a loaded parse table file (.ptbl). This also determines if the parse 
+        table file is not eligible to be loaded.
+        Input: File path of the chosen parse table file and the data inside the said file
+        Output: None
+    """    
     def extract_ptbl(self, file_path, data):
         non_term = []
         content = []
-        data = data.splitlines()
+        data = data.splitlines() # Splits the parse table content by line
         
-        terminals = re.split(",", data[0])
-        terminal_num = len(terminals)
+        terminals = re.split(",", data[0]) # Gets the header terminals from the parse table file
+        terminal_num = len(terminals)   # Gets the number of terminals in the parse table
         
+        # Divides each line of the parse table file, from the second line, to non-terminals and the productions number or blank
         for line in data[1:]:
             row = re.split(",", line)
             
+            # Checks if the number of columns in a line is equal to the number of terminals in the parse table
             if terminal_num != len(row):
-                if self.ptbl_data != []:
-                    self.left_side.status_label.config(text=f"Incomplete data! {self.loaded_ptbl_file} is loaded.", foreground="maroon")   
+                if self.ptbl_data != []:    # Condition where there is a previous successfully loaded parse table file
+                    self.left_side.status_label.config(text=f"Incomplete data! {self.loaded_ptbl_file} is loaded." ,foreground = "maroon")   
                     self.ptbl_status = False
                 return 
             
             non_term.append(row[0])
             content.append(row[1:])
         
+        # Updates the variables that holds the necessary information needed for the parsing process
         self.loaded_ptbl_file = file_path.split('/')[-1]   
         self.ptbl_data = data
         self.ptbl_terminals = terminals[1:] 
         self.ptbl_NT = non_term
         self.ptbl_markers = content
         self.ptbl_status = True
-        
-    def parse(self, event=None):
-        self.right_side.remove_parsing_table()
+    
+    """
+        This is the function that executes the parsing process of the program. It follows the Non-Recursive Predictive Parsing algorithm.
+        This is also the function ran when the "PARSE" button is pressed.
+        Input: None
+        Output: None
+    """     
+    def parse(self):
+        self.right_side.remove_parsing_table() # Removes the parsing table
 
         self.right_side.parsing_treeview.column("#3", width=250, stretch="no")
+        
+        """
+            This is a function that implements the push operation of the stack used in the parser. It has an additional functionality
+            where when an epsilon is encountered (represented by small e), it would not push the symbol to the stack.
+            Input: Production table variable and the stack
+            Output: None
+        """
         def push(prod, stack):
             prod.reverse()
             for symbol in prod:
                 if symbol != 'e':
                     stack.append(symbol)
-            
+        
+        # Initializes the stack with a dollar sign (end of stack) and the first non-terminal    
         stack = []
         stack.append('$')
         stack.append(self.ptbl_NT[0])
         
-        input_txt = self.left_side.input_field.get('1.0','end')
+        input_txt = self.left_side.input_field.get('1.0','end') # Gets the user input from the text input bar
         
-        input_buffer = input_txt.split()
-        input_buffer.append('$')
+        input_buffer = input_txt.split()    # Splits the user input into separate tokens and stores it in an input buffer
+        input_buffer.append('$')            # Adds a $ to the end of the input buffer, signifying the end of the buffer
         
-        stack_top = stack[-1]
-        curr_input_index = 0
+        stack_top = stack[-1]       # Initializes the top of the stack to the stack's topmost element
+        curr_input_index = 0        # Initializes the current input index to start at the beginning of the input buffer
+        
+        # Reversed for proper displaying of the stack to the UI
         stack.reverse()
         self.right_side.parsing_treeview.insert("", "end", values=[stack, input_buffer])
         stack.reverse()
         
+        # Loop that executes the Non-Recursive Predictive Parsing
+        # Ends the loop when the top of the stack and the symbol pointed by the current input index are $
         while(stack_top != '$'):
             action = " "
             row = self.ptbl_NT.index(stack_top) if stack_top in self.ptbl_NT else None
             col = self.ptbl_terminals.index(input_buffer[curr_input_index]) if input_buffer[curr_input_index] in self.ptbl_terminals else None
             
-            if stack_top == input_buffer[curr_input_index]: # match
+            if stack_top == input_buffer[curr_input_index]: # The top of the stack and the symbol pointed by the current input index are the same terminals
                 stack.pop()
                 action = f"Match {input_buffer[curr_input_index]} "
                 curr_input_index+=1
-            elif stack_top in self.ptbl_terminals:
+            elif stack_top in self.ptbl_terminals: # The top of the stack is a terminal but does not match with the symbol pointed by the current input index 
                 action = 'ERROR! Top stack terminal does not match with current symbol in input buffer.' 
                 break
-            elif row == None or col == None or self.ptbl_markers[row][col] == '': # if basta uy
+            elif row == None or col == None or self.ptbl_markers[row][col] == '': # No productions are found based on the parse table
                 action = 'ERROR! No production found.'
                 break
-            elif self.ptbl_markers[row][col] != '':
+            elif self.ptbl_markers[row][col] != '': # A production exists in the parse table
                 stack.pop()
                 prod_index = int(self.ptbl_markers[row][col]) - 1 
                 prod = self.prod_data[prod_index][2].split()
@@ -219,12 +291,14 @@ class ProgramNRRP(tk.Tk):
             
             stack_top = stack[-1]
         
+        # When the top of the stack and the symbol pointed by the current input index are $
         if( stack_top == '$' and input_buffer[curr_input_index] == '$'):
             to_display = ['','', "Match $"]
-            self.right_side.parsing_placeholder.config(text=f"Valid. Please see {self.file_path.split('/')[-1].split('.')[0]}.prsd", foreground="green")
+            self.right_side.parsing_placeholder.config(text=f"Valid. Please see {self.file_path.split('/')[-1].split('.')[0]}.prsd",foreground = "green")
             self.right_side.parsing_treeview.insert("", "end", values=to_display)
             self.right_side.parsing_treeview.pack(side='top', anchor='w', fill='y')
             
+            # When there are still symbols in the input buffer not accounted for
             if(curr_input_index != len(input_buffer)-1):
                 self.right_side.parsing_placeholder.config(text="ERROR", foreground="maroon")
                 to_display = ['','',"ERROR! Does not reach end of input buffer."]
@@ -236,11 +310,11 @@ class ProgramNRRP(tk.Tk):
             self.right_side.parsing_treeview.insert("", "end", values=to_display)
             self.right_side.parsing_treeview.pack(side='top', anchor='w', fill='y')  
         
-        
+        # Creates the output file and sets the path where its going to be saved
         output_filename = self.file_path.split('/')[-1].split('.')[0] + '.prsd'
         output_path = os.path.join(os.path.dirname(self.file_path), output_filename)  
         
-        output_filename = simpledialog.askstring("Set File Name", "Enter File Name for '.prsd' file")
+        output_filename = simpledialog.askstring("Set File Name", "Enter File Name for '.prsd' file") # Asks user to input a name for the file
         if(output_filename != None ):
             output_filename = f"{output_filename}_{self.loaded_prod_file.replace('.prod', '.prsd')}" 
             
@@ -258,6 +332,12 @@ class ProgramNRRP(tk.Tk):
         else:
             return
         
+    """
+        This is a function that verifies if the input files have the same filenames or when at least one of the input files
+        are not loaded successfully. When the said conditions are true, the "PARSE" button is disabled.
+        Input: None
+        Output: None
+    """    
     def check_loaded(self):
         self.right_side.remove_parsing_table()
         
@@ -278,7 +358,7 @@ class ProgramNRRP(tk.Tk):
             else:
                 self.right_side.parsing_placeholder.config(text="Missing .ptbl file", foreground="maroon")
         else:
-            self.right_side.parsing_placeholder.config(text="One of the loaded files are empty", foreground="maroon")
+            self.right_side.parsing_placeholder.config(text="One of the loaded Files are empty", foreground="maroon")
             
 class left_section(tk.Frame):
     
@@ -380,12 +460,18 @@ class left_section(tk.Frame):
         self.parse_button = tk.Button(master = self.frame_4, text="Parse", command= parent.parse, width="8", state=tk.DISABLED)
         self.parse_button.pack(side = 'left')
     
+    # This is a function that removes the production table from the UI.
+    # Input: None
+    # Output: None
     def remove_prod_table(self):
         for item in self.var_used_production_Treeview.get_children():
                 self.var_used_production_Treeview.delete(item)
 
         self.var_used_production_Treeview.column("#0", width = 0, stretch = "no")
     
+    # This is a function that removes the parse table from the UI.
+    # Input: None
+    # Output: None
     def remove_parse_table(self):
         for item in self.var_used_parse_treeview.get_children():
                 self.var_used_parse_treeview.delete(item)
@@ -409,7 +495,7 @@ class right_section(tk.Frame):
         self.parsing_label = ttk.Label(self.frame_1, text="PARSING:", font=("Helvetica", 12, "bold"))
         self.parsing_label.pack(side = "top", anchor='w')
         
-        self.parsing_placeholder = ttk.Label(self.frame_1, text="", font=("Tahoma", 12, "bold"))
+        self.parsing_placeholder = ttk.Label(self.frame_1, text="", font=("Tahoma", 10, "bold"))
         self.parsing_placeholder.pack(side = "top", pady=[0, 10])
         
         self.parsing_treeview = ttk.Treeview(self, height=50)
@@ -425,10 +511,13 @@ class right_section(tk.Frame):
         
         self.parsing_treeview.pack(side='top', fill='both', expand=True)
     
+    # This is a function that removes the parsing solution table from the UI.
+    # Input: None
+    # Output: None
     def remove_parsing_table(self):
         for item in self.parsing_treeview.get_children():
                 self.parsing_treeview.delete(item)
 
         # self.parsing_treeview.column("#0", width=0, stretch = "no")
         
-ProgramNRRP(title="NRRP App", size="1280x720")
+ProgramNRPP(title="Non-Recursive Predictive Parser App", size="1280x720")
